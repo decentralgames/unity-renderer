@@ -1,5 +1,5 @@
-import { FeatureFlagsResult, FeatureFlagVariant, fetchFlags } from '@dcl/feature-flags'
-import { ETHEREUM_NETWORK, getAssetBundlesBaseUrl, getServerConfigurations, PREVIEW, rootURLPreviewMode } from 'config'
+import { FeatureFlagsResult, FeatureFlagVariant } from '@dcl/feature-flags'
+import { ETHEREUM_NETWORK, getAssetBundlesBaseUrl, getServerConfigurations } from 'config'
 import defaultLogger from 'lib/logger'
 import { waitFor } from 'lib/redux'
 import { all, call, put, select, take } from 'redux-saga/effects'
@@ -39,12 +39,6 @@ export function* metaSaga(): any {
 }
 
 async function fetchFeatureFlagsAndVariants(network: ETHEREUM_NETWORK): Promise<FeatureFlagsResult> {
-  const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone';
-
-  const explorerFeatureFlags = PREVIEW
-    ? `${rootURLPreviewMode()}/feature-flags/`
-    : `https://feature-flags.decentraland.${tld}`;
-
   let flagsAndVariants;
   try {
     const response = await fetch('/explorer.json');
