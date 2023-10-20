@@ -39,61 +39,72 @@ export function* metaSaga(): any {
 }
 
 async function fetchFeatureFlagsAndVariants(network: ETHEREUM_NETWORK): Promise<FeatureFlagsResult> {
-  const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone'
+  const tld = network === ETHEREUM_NETWORK.MAINNET ? 'org' : 'zone';
 
   const explorerFeatureFlags = PREVIEW
     ? `${rootURLPreviewMode()}/feature-flags/`
-    : `https://feature-flags.decentraland.${tld}`
+    : `https://feature-flags.decentraland.${tld}`;
 
-  const flagsAndVariants = await fetchFlags({ applicationName: 'explorer', featureFlagsUrl: explorerFeatureFlags })
+  let flagsAndVariants;
+  try {
+    const response = await fetch('/explorer.json');
+    if (response.ok) {
+      flagsAndVariants = await response.json();
+    } else {
+      console.error('Error loading explorer.json', response.status, response.statusText);
+      flagsAndVariants = { flags: {}, variants: {} };
+    }
+  } catch (err) {
+    console.error('Error fetching explorer.json', err);
+    flagsAndVariants = { flags: {}, variants: {} };
+  }
 
   for (const key in flagsAndVariants.flags) {
-    const value = flagsAndVariants.flags[key]
-    delete flagsAndVariants.flags[key]
-    flagsAndVariants.flags[key.replace(/^explorer-/, '')] = value
+    const value = flagsAndVariants.flags[key];
+    delete flagsAndVariants.flags[key];
+    flagsAndVariants.flags[key.replace(/^explorer-/, '')] = value;
   }
 
   for (const key in flagsAndVariants.variants) {
-    const value = flagsAndVariants.variants[key]
-    delete flagsAndVariants.variants[key]
-    flagsAndVariants.variants[key.replace(/^explorer-/, '')] = value
+    const value = flagsAndVariants.variants[key];
+    delete flagsAndVariants.variants[key];
+    flagsAndVariants.variants[key.replace(/^explorer-/, '')] = value;
   }
 
   if (location.search.length !== 0) {
-    const flags = new URLSearchParams(location.search)
+    const flags = new URLSearchParams(location.search);
     flags.forEach((_, key) => {
       if (key.startsWith(`DISABLE_`)) {
-        const nameVariant = key.replace('DISABLE_', '').toLowerCase().split(':')
-        const name = nameVariant[0] as FeatureFlagsName
+        const nameVariant = key.replace('DISABLE_', '').toLowerCase().split(':');
+        const name = nameVariant[0] as FeatureFlagsName;
         if (name in flagsAndVariants.variants) {
-          flagsAndVariants.flags[name] = true
-          flagsAndVariants.variants[name].enabled = false
+          flagsAndVariants.flags[name] = true;
+          flagsAndVariants.variants[name].enabled = false;
         } else {
-          flagsAndVariants.flags[name] = false
+          flagsAndVariants.flags[name] = false;
         }
       } else if (key.startsWith(`ENABLE_`)) {
-        const nameVariant = key.replace('ENABLE_', '').toLowerCase().split(':')
-        const name = nameVariant[0] as FeatureFlagsName
-        const variant = nameVariant.length > 1 ? nameVariant[1] : null
+        const nameVariant = key.replace('ENABLE_', '').toLowerCase().split(':');
+        const name = nameVariant[0] as FeatureFlagsName;
+        const variant = nameVariant.length > 1 ? nameVariant[1] : null;
 
-        flagsAndVariants.flags[name] = true
+        flagsAndVariants.flags[name] = true;
         if (name in flagsAndVariants.variants) {
-          flagsAndVariants.variants[name].enabled = true
+          flagsAndVariants.variants[name].enabled = true;
         } else {
           if (variant !== null) {
             flagsAndVariants.variants[name] = {
               enabled: true,
               name: variant
-            } as FeatureFlagVariant
+            } as FeatureFlagVariant;
           }
         }
       }
-    })
+    });
   }
 
-  return flagsAndVariants
+  return flagsAndVariants;
 }
-
 async function fetchMetaConfiguration(network: ETHEREUM_NETWORK): Promise<Partial<MetaConfiguration>> {
   const serverConfiguration = getServerConfigurations(network)
   const explorerConfigurationEndpoint = serverConfiguration.explorerConfiguration
